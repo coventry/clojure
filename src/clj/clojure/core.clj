@@ -4119,7 +4119,17 @@
                                            " should be a list")))))
                        conds (when (and (next body) (map? (first body))) 
                                            (first body))
-                       body (if conds (next body) body)
+                       _ (when (and (map? conds) (not (seq conds)))
+                           (throw (IllegalArgumentException.
+                                   "Condition map is empty")))
+                       mismatched-keys (->> conds keys
+                                            (remove #{:pre :post}) seq)
+                       _ (when mismatched-keys
+                           (throw (IllegalArgumentException.
+                                   (str "Condition map contains keys "
+                                        mismatched-keys
+                                        ".  Should contain at most :pre and "
+                                        ":post"))))
                        conds (or conds (meta params))
                        pre (:pre conds)
                        post (:post conds)                       

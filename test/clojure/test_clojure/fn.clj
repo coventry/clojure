@@ -52,4 +52,14 @@
           (eval '(fn a))))
     (is (fails-with-cause? java.lang.IllegalArgumentException 
           #"Parameter declaration missing"
-          (eval '(fn))))))
+          (eval '(fn)))))
+
+  (testing "Condition-map sanity checks"
+    (is (fn [] {:pre [true] :post [true]} 1)
+        "Should get no errors with correct condition-map.")
+    (is (fails-with-cause? java.lang.IllegalArgumentException
+          #"Condition map contains keys .* Should contain at most :pre and :post"
+          (eval '(fn [] {:pre [true] :post [true] :foo 1} 1))))
+    (is (fails-with-cause? java.lang.IllegalArgumentException
+          #"Condition map is empty"
+          (eval '(fn foo [] {} 1))))))
