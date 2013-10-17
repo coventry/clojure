@@ -20,6 +20,8 @@
 
 (defmacro m1 [a] `(inc ~a))
 
+(defmacro m2 [] (assoc))
+
 (deftest arity-exception
   ;; IllegalArgumentException is pre-1.3
   (is (thrown-with-msg? IllegalArgumentException #"Wrong number of args \(1\) passed to"
@@ -29,7 +31,9 @@
   (is (thrown-with-msg? ArityException #"Wrong number of args \(1\) passed to"
         (macroexpand `(m0 1))))
   (is (thrown-with-msg? ArityException #"Wrong number of args \(2\) passed to"
-        (macroexpand `(m1 1 2)))))
+        (macroexpand `(m1 1 2))))
+  (is (thrown-with-msg? ArityException #"Wrong number of args \(0\) passed to: core\$assoc"
+        (macroexpand `(m2)))))
 
 (deftest assert-arg-messages
   ; used to ensure that error messages properly use local names for macros
