@@ -6467,6 +6467,30 @@ public static Object preserveTag(ISeq src, Object dst) {
 	return dst;
 }
 
+private static Boolean macroArityExceptionp(StackTraceElement[] elems) {
+        // Walk up the stack to find the macroexpand1 call.  Count how
+        // many clojure functions there are below it.  If there are
+        // none, the ArityException resulted from the macro call
+        // itself, rather than anything inside the macro.
+        int frame;
+        int clojure_frames = 0;
+        for (frame=0; frame < elems.length; frame++) 
+                {
+                        String filename = elems[frame].getFileName();
+                        if((elems[frame].getMethodName() == "macroexpand1") &&
+                           (filename                     == "Compiler.java")) 
+                                {
+                                        break;
+                                }
+                        if(!filename.endsWith(".java")) 
+                                {
+                                        clojure_frames += 1;
+                                }
+                }
+        assert frame <= elems.length : "macroexpand1 call should be in stack trace";
+        return (clojure_frames == 0);
+}
+
 public static Object macroexpand1(Object x) {
 	if(x instanceof ISeq)
 		{
@@ -6484,10 +6508,22 @@ public static Object macroexpand1(Object x) {
 					}
 				catch(ArityException e)
 					{
-						// hide the 2 extra params for a macro
-						throw new ArityException(e.actual - 2, e.name);
-					}
-			}
+                                                StackTraceElement[] elems = e.getStackTrace();
+                                                if(macroArityExceptionp(elems))
+                                                        {
+                                                                // Edit the bottom frame of the stack to hide the 2 extra params for
+                                                                // a macro
+                                                                ArityException newexc = new ArityException(
+                                                                	e.actual - 2, e.name, e.getCause());
+                                                                newexc.setStackTrace(elems);
+                                                                throw newexc;
+                                                        }
+                                                else
+                                                        {
+                                                                throw e;
+                                                        }
+                                        }
+                        }
 		else
 			{
 			if(op instanceof Symbol)
